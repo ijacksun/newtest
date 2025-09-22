@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { BackgroundPapers } from "./components/BackgroundPapers";
-import { LoginForm } from "./components/LoginForm";
-import { RegisterForm } from "./components/RegisterForm";
 import { HomePage } from "./components/HomePage";
 import { NotesInterface } from "./components/NotesInterface";
 
@@ -58,7 +55,7 @@ export interface TodoItem {
 }
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'home' | 'notes'>('login');
+  const [currentPage, setCurrentPage] = useState<'home' | 'notes'>('home');
   const [selectedFolderPath, setSelectedFolderPath] = useState<string[]>([]);
   const [folderStructure, setFolderStructure] = useState<FolderNode[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -178,11 +175,28 @@ export default function App() {
 
   // Função para navegar para uma nota por ID
   const navigateToNoteById = (noteId: string) => {
+    console.log('navigateToNoteById chamado com noteId:', noteId);
+    console.log('Estrutura de pastas atual:', folderStructure);
+    
     const result = findNoteById(noteId);
+    console.log('Resultado da busca por nota:', result);
+    
     if (result) {
+      console.log('Nota encontrada, navegando para:', result.path);
+      
+      // Atualizar o timestamp da nota
       updateNoteLastOpened(result.path, noteId);
+      
+      // Navegar para a pasta da nota
       setSelectedFolderPath(result.path);
+      
+      // Ir para a página de notas
       setCurrentPage('notes');
+      
+      console.log('Navegação concluída');
+    } else {
+      console.error('Nota não encontrada com ID:', noteId);
+      alert(`Nota não encontrada (ID: ${noteId}). A nota pode ter sido movida ou excluída.`);
     }
   };
 
@@ -272,21 +286,30 @@ export default function App() {
     );
   }
 
+  // App sempre inicia na HomePage
   return (
-    <div className="min-h-screen bg-gray-100 relative overflow-hidden flex items-center justify-center">
-      <BackgroundPapers />
-      
-      {currentPage === 'login' ? (
-        <LoginForm 
-          onSwitchToRegister={() => setCurrentPage('register')} 
-          onLoginSuccess={() => setCurrentPage('home')}
-        />
-      ) : (
-        <RegisterForm 
-          onSwitchToLogin={() => setCurrentPage('login')} 
-          onRegisterSuccess={() => setCurrentPage('home')}
-        />
-      )}
-    </div>
+    <HomePage 
+      folderStructure={folderStructure}
+      setFolderStructure={setFolderStructure}
+      bookmarks={bookmarks}
+      setBookmarks={setBookmarks}
+      trashItems={trashItems}
+      setTrashItems={setTrashItems}
+      todoItems={todoItems}
+      setTodoItems={setTodoItems}
+      onFolderClick={(folderName) => {
+        setSelectedFolderPath([folderName]);
+        setCurrentPage('notes');
+      }}
+      onNavigateToNote={(notePath, noteId) => {
+        updateNoteLastOpened(notePath, noteId);
+        setSelectedFolderPath(notePath);
+        setCurrentPage('notes');
+      }}
+      onNavigateToFolder={(folderPath) => {
+        setSelectedFolderPath(folderPath);
+        setCurrentPage('notes');
+      }}
+    />
   );
 }

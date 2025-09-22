@@ -78,6 +78,7 @@ export function NotesInterface({
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; noteId?: string; folderId?: string; type: 'note' | 'folder' } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Função para encontrar a pasta atual baseada no path
@@ -143,6 +144,42 @@ export function NotesInterface({
       setActiveTab(newNote.id);
     }
   }, [selectedFolderPath]);
+
+  // Efeito para abrir automaticamente a nota mais recente quando navegamos para uma pasta via link
+  useEffect(() => {
+    const currentFolder = getCurrentFolder();
+    
+    if (currentFolder && currentFolder.notes.length > 0) {
+      // Encontrar a nota com o lastOpenedAt mais recente
+      const mostRecentNote = currentFolder.notes.reduce((latest, note) => {
+        if (!latest.lastOpenedAt && !note.lastOpenedAt) return latest;
+        if (!latest.lastOpenedAt) return note;
+        if (!note.lastOpenedAt) return latest;
+        return new Date(note.lastOpenedAt) > new Date(latest.lastOpenedAt) ? note : latest;
+      });
+
+      // Se a nota mais recente foi aberta nos últimos 2 segundos (indicando navegação via link)
+      if (mostRecentNote.lastOpenedAt) {
+        const timeDiff = Date.now() - new Date(mostRecentNote.lastOpenedAt).getTime();
+        if (timeDiff < 2000) { // 2 segundos
+          console.log('Abrindo nota automaticamente após navegação por link:', mostRecentNote.title);
+          
+          // Aguardar um pouco para garantir que a estrutura foi atualizada
+          setTimeout(() => {
+            setOpenTabs(prevTabs => {
+              if (!prevTabs.find(tab => tab.id === mostRecentNote.id)) {
+                return [...prevTabs, mostRecentNote];
+              }
+              return prevTabs.map(tab => 
+                tab.id === mostRecentNote.id ? mostRecentNote : tab
+              );
+            });
+            setActiveTab(mostRecentNote.id);
+          }, 100);
+        }
+      }
+    }
+  }, [selectedFolderPath, folderStructure]);
 
   const createNewNote = () => {
     const now = new Date().toISOString();
@@ -475,6 +512,26 @@ export function NotesInterface({
     }
   };
 
+  // Função personalizada para navegação que primeiro verifica se a nota está na pasta atual
+  const handleNoteNavigation = (noteId: string) => {
+    console.log('handleNoteNavigation chamado com noteId:', noteId);
+    const currentFolder = getCurrentFolder();
+    
+    // Primeiro, verificar se a nota está na pasta atual
+    if (currentFolder) {
+      const localNote = currentFolder.notes.find(note => note.id === noteId);
+      if (localNote) {
+        console.log('Nota encontrada na pasta atual, abrindo diretamente:', localNote.title);
+        openNote(localNote);
+        return;
+      }
+    }
+    
+    // Se não está na pasta atual, usar a função original do App.tsx
+    console.log('Nota não encontrada na pasta atual, navegando via onNavigateToNoteById');
+    onNavigateToNoteById(noteId);
+  };
+
   const currentFolder = getCurrentFolder();
   const activeNote = openTabs.find(tab => tab.id === activeTab);
   const searchResults = getSearchResults();
@@ -700,7 +757,7 @@ export function NotesInterface({
                   placeholder="Digite algo para criar uma nota |"
                   folderStructure={folderStructure}
                   noteId={activeNote.id}
-                  onNavigateToNote={onNavigateToNoteById}
+                  onNavigateToNote={handleNoteNavigation}
                 />
               </div>
             </>

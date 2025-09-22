@@ -63,10 +63,10 @@ export function FormattedTextRenderer({ text, onNavigateToNote }: FormattedTextR
           return {
             before,
             element: (
-              <span
+              <button
                 key={keyCounter++}
                 data-interactive="true"
-                className="underline text-blue-400 cursor-pointer hover:text-blue-300 decoration-2 decoration-blue-400 underline-offset-2 z-50 relative"
+                className="underline text-blue-400 cursor-pointer hover:text-blue-300 decoration-2 decoration-blue-400 underline-offset-2 z-50 relative bg-transparent border-none p-0 m-0 font-inherit leading-inherit inline"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -75,15 +75,26 @@ export function FormattedTextRenderer({ text, onNavigateToNote }: FormattedTextR
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation();
-                  // Força a execução imediata da navegação
+                  
+                  // Executa a navegação
                   if (onNavigateToNote && typeof onNavigateToNote === 'function') {
-                    setTimeout(() => onNavigateToNote(noteId), 0);
+                    onNavigateToNote(noteId);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onNavigateToNote && typeof onNavigateToNote === 'function') {
+                      onNavigateToNote(noteId);
+                    }
                   }
                 }}
                 title={`Ir para: ${noteTitle}`}
+                type="button"
               >
                 {content}
-              </span>
+              </button>
             ),
             after
           };

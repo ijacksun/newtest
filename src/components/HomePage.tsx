@@ -134,6 +134,49 @@ export function HomePage({
   const [showCreateWordModal, setShowCreateWordModal] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Função para obter cor e texto da tag baseado no tipo de ação e tempo
+  const getNoteTagInfo = (type: 'created' | 'modified' | 'opened', timestamp: string) => {
+    const now = new Date();
+    const noteTime = new Date(timestamp);
+    const hoursDiff = (now.getTime() - noteTime.getTime()) / (1000 * 60 * 60);
+
+    // Se foi nas últimas 24 horas
+    if (hoursDiff <= 24) {
+      switch (type) {
+        case 'created':
+          return {
+            color: 'bg-green-500',
+            textColor: 'text-white',
+            label: 'Criada Recentemente',
+            timeText: hoursDiff < 1 ? 'Agora mesmo' : `${Math.floor(hoursDiff)}h atrás`
+          };
+        case 'modified':
+          return {
+            color: 'bg-blue-500',
+            textColor: 'text-white',
+            label: 'Modificada Recentemente',
+            timeText: hoursDiff < 1 ? 'Agora mesmo' : `${Math.floor(hoursDiff)}h atrás`
+          };
+        case 'opened':
+          return {
+            color: 'bg-pink-500',
+            textColor: 'text-white',
+            label: 'Visualizada Recentemente',
+            timeText: hoursDiff < 1 ? 'Agora mesmo' : `${Math.floor(hoursDiff)}h atrás`
+          };
+      }
+    } else {
+      // Mais de 24 horas - mostrar como último acesso
+      const daysDiff = Math.floor(hoursDiff / 24);
+      return {
+        color: 'bg-gray-500',
+        textColor: 'text-white',
+        label: 'Último Acesso',
+        timeText: daysDiff === 1 ? '1 dia atrás' : `${daysDiff} dias atrás`
+      };
+    }
+  };
+
   // Função para obter notas recentes
   const getRecentNotes = () => {
     const allNotes: Array<{
@@ -333,16 +376,60 @@ export function HomePage({
     setIsStreakExpanded(!isStreakExpanded);
   };
 
-  // Definir cores disponíveis para TODOs
-  const todoColors = [
-    "bg-gray-500",
-    "bg-green-400",
-    "bg-blue-500",
-    "bg-purple-500",
-    "bg-red-500",
-    "bg-yellow-500",
-    "bg-indigo-500",
-  ];
+  // Função para determinar a cor da tarefa baseada no status e prazo
+  const getTodoColor = (todo: TodoItem) => {
+    if (todo.completed) {
+      return "bg-green-500"; // Verde para completadas
+    }
+
+    const now = new Date();
+    const taskDateTime = new Date(todo.date);
+    const [hours, minutes] = todo.time.split(':').map(Number);
+    taskDateTime.setHours(hours, minutes, 0, 0);
+
+    const timeDiff = taskDateTime.getTime() - now.getTime();
+    const hoursUntilTask = timeDiff / (1000 * 60 * 60);
+
+    if (timeDiff < 0) {
+      // Tarefa passou do prazo
+      return "bg-red-500";
+    } else if (hoursUntilTask <= 24) {
+      // Tarefa próxima (dentro de 24 horas)
+      return "bg-yellow-500";
+    } else {
+      // Tarefa dentro do prazo normal
+      return "bg-gray-500";
+    }
+  };
+
+  // Função para obter texto descritivo do status da tarefa
+  const getTodoStatusText = (todo: TodoItem) => {
+    if (todo.completed) {
+      return "Concluída";
+    }
+
+    const now = new Date();
+    const taskDateTime = new Date(todo.date);
+    const [hours, minutes] = todo.time.split(':').map(Number);
+    taskDateTime.setHours(hours, minutes, 0, 0);
+
+    const timeDiff = taskDateTime.getTime() - now.getTime();
+    const hoursUntilTask = timeDiff / (1000 * 60 * 60);
+
+    if (timeDiff < 0) {
+      const hoursPassed = Math.abs(hoursUntilTask);
+      if (hoursPassed < 24) {
+        return `Atrasada (${Math.floor(hoursPassed)}h)`;
+      } else {
+        return `Atrasada (${Math.floor(hoursPassed / 24)}d)`;
+      }
+    } else if (hoursUntilTask <= 24) {
+      return `Urgente (${Math.floor(hoursUntilTask)}h restantes)`;
+    } else {
+      const daysUntilTask = Math.floor(hoursUntilTask / 24);
+      return `${daysUntilTask} dias restantes`;
+    }
+  };
 
   const addFolder = () => {
     setShowNewFolderModal(true);
@@ -851,10 +938,15 @@ export function HomePage({
       task: todoData.title, // Usar o título como task também
       date: todoData.date,
       time: todoData.time,
-      color:
-        todoColors[
-          Math.floor(Math.random() * todoColors.length)
-        ], // Cor aleatória
+      color: getTodoColor({
+        id: '',
+        title: todoData.title,
+        task: todoData.title,
+        date: todoData.date,
+        time: todoData.time,
+        completed: false,
+        createdAt: new Date().toISOString()
+      }), // Cor baseada no status
       completed: false,
       createdAt: new Date().toISOString(),
     };
