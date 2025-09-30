@@ -1,3 +1,4 @@
+import './firebaseSync';
 import { useState, useEffect } from "react";
 import { HomePage } from "./components/HomePage";
 import { NotesInterface } from "./components/NotesInterface";
