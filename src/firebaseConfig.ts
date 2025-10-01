@@ -5,12 +5,13 @@ import { getFirestore } from "firebase/firestore";
 
 // 🔴 Substitua pelos dados do seu projeto no Firebase Console
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyD34CcpucrAhc2mXAVh5pALjtWsehMH2iA",
+  authDomain: "testingstride.firebaseapp.com",
+  projectId: "testingstride",
+  storageBucket: "testingstride.firebasestorage.app",
+  messagingSenderId: "912252616191",
+  appId: "1:912252616191:web:9f0d171e337a2028093bca",
+  measurementId: "G-MK3PXSF6LM"
 };
 
 const app = initializeApp(firebaseConfig);
